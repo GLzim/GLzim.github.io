@@ -1,0 +1,607 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mapa Interativo da Rússia</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #1a2a6c, #2c3e50);
+            color: #333;
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding: 20px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+        }
+        
+        h1 {
+            color: white;
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+        }
+        
+        .subtitle {
+            color: #ecf0f1;
+            font-size: 1.2rem;
+            margin-bottom: 15px;
+        }
+        
+        .content {
+            display: flex;
+            gap: 30px;
+            flex-wrap: wrap;
+        }
+        
+        .map-section {
+            flex: 1;
+            min-width: 300px;
+        }
+        
+        .info-section {
+            flex: 1;
+            min-width: 300px;
+        }
+        
+        .map-container {
+            background: white;
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            height: 600px;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .map-image-container {
+            width: 100%;
+            height: 100%;
+            background: #e8f4f8;
+            border-radius: 10px;
+            position: relative;
+            overflow: hidden;
+            cursor: pointer;
+        }
+        
+        .map-image {
+            width: 100%;
+            height: 100%;
+            object-fit: contain; /* Imagem completa visível */
+        }
+        
+        .info-panel {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            height: 600px;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .info-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #ecf0f1;
+        }
+        
+        .flag {
+            width: 60px;
+            height: 40px;
+            margin-right: 15px;
+            border-radius: 5px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+            background: linear-gradient(to bottom, #fff 33%, #0039a6 33%, #0039a6 66%, #d52b1e 66%);
+        }
+        
+        .info-title {
+            font-size: 1.8rem;
+            color: #2c3e50;
+        }
+        
+        .info-content {
+            flex: 1;
+            overflow-y: auto;
+            padding-right: 10px;
+        }
+        
+        .info-item {
+            margin-bottom: 15px;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 10px;
+            border-left: 4px solid #3498db;
+        }
+        
+        .info-item h3 {
+            color: #2c3e50;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .info-item p {
+            color: #34495e;
+            line-height: 1.5;
+        }
+        
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+            margin-top: 20px;
+        }
+        
+        .stat-card {
+            background: linear-gradient(135deg, #3498db, #2980b9);
+            color: white;
+            padding: 15px;
+            border-radius: 10px;
+            text-align: center;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        
+        .stat-value {
+            font-size: 1.8rem;
+            font-weight: bold;
+            margin: 5px 0;
+        }
+        
+        .stat-label {
+            font-size: 0.9rem;
+            opacity: 0.9;
+        }
+        
+        .search-box {
+            margin-bottom: 20px;
+            position: relative;
+        }
+        
+        .search-box input {
+            width: 100%;
+            padding: 12px 20px;
+            border-radius: 50px;
+            border: 2px solid #3498db;
+            font-size: 1rem;
+            outline: none;
+            transition: all 0.3s;
+        }
+        
+        .search-box input:focus {
+            border-color: #e74c3c;
+            box-shadow: 0 0 0 3px rgba(231, 76, 60, 0.2);
+        }
+        
+        .search-icon {
+            position: absolute;
+            right: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #7f8c8d;
+        }
+        
+        .region-list {
+            margin-top: 20px;
+            max-height: 200px;
+            overflow-y: auto;
+            border: 1px solid #ecf0f1;
+            border-radius: 10px;
+            padding: 10px;
+        }
+        
+        .region-list-item {
+            padding: 10px 15px;
+            border-bottom: 1px solid #ecf0f1;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .region-list-item:last-child {
+            border-bottom: none;
+        }
+        
+        .region-list-item:hover {
+            background: #f8f9fa;
+            border-radius: 5px;
+        }
+        
+        .region-list-item.active {
+            background: #3498db;
+            color: white;
+            border-radius: 5px;
+        }
+        
+        .region-color {
+            width: 15px;
+            height: 15px;
+            border-radius: 50%;
+            background: #3498db;
+        }
+        
+        footer {
+            text-align: center;
+            margin-top: 30px;
+            color: #ecf0f1;
+            padding: 20px;
+            font-size: 0.9rem;
+            line-height: 1.6;
+        }
+        
+        .footer-names {
+            margin-top: 10px;
+            font-weight: bold;
+        }
+        
+        .highlight {
+            color: #e74c3c;
+            font-weight: bold;
+        }
+        
+        /* Scrollbar personalizada */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 10px;
+        }
+        
+        ::-webkit-scrollbar-thumb {
+            background: #3498db;
+            border-radius: 10px;
+        }
+        
+        ::-webkit-scrollbar-thumb:hover {
+            background: #2980b9;
+        }
+        
+        @media (max-width: 768px) {
+            .content {
+                flex-direction: column;
+            }
+            
+            .map-container, .info-panel {
+                height: 500px;
+            }
+            
+            h1 {
+                font-size: 2rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1><i class="fas fa-globe-europe"></i> Mapa Interativo da Rússia</h1>
+            <p class="subtitle">Clique em qualquer região para explorar informações detalhadas</p>
+        </header>
+        
+        <div class="content">
+            <div class="map-section">
+                <div class="map-container">
+                    <!-- IMAGEM DO MAPA - substitua pela sua -->
+                    <div class="map-image-container">
+                        <img src=https://qu.ax/AUpmG.jpg alt="Mapa da Rússia" class="map-image" id="russia-map">
+                    </div>
+                </div>
+                
+                <div class="search-box">
+                    <input type="text" id="search-input" placeholder="Pesquisar região...">
+                    <i class="fas fa-search search-icon"></i>
+                </div>
+                
+                <div class="region-list">
+                    <div class="region-list-item" data-region="moscow">
+                        <div class="region-color" style="background: #3498db"></div>
+                        <span>Moscou</span>
+                    </div>
+                    <div class="region-list-item" data-region="saint-petersburg">
+                        <div class="region-color" style="background: #2980b9"></div>
+                        <span>São Petersburgo</span>
+                    </div>
+                    <div class="region-list-item" data-region="krasnodar">
+                        <div class="region-color" style="background: #1abc9c"></div>
+                        <span>Krasnodar</span>
+                    </div>
+                    <div class="region-list-item" data-region="sverdlovsk">
+                        <div class="region-color" style="background: #9b59b6"></div>
+                        <span>Sverdlovsk</span>
+                    </div>
+                    <div class="region-list-item" data-region="novosibirsk">
+                        <div class="region-color" style="background: #e67e22"></div>
+                        <span>Novosibirsk</span>
+                    </div>
+                    <div class="region-list-item" data-region="irkutsk">
+                        <div class="region-color" style="background: #e74c3c"></div>
+                        <span>Irkutsk</span>
+                    </div>
+                    <div class="region-list-item" data-region="khabarovsk">
+                        <div class="region-color" style="background: #3498db"></div>
+                        <span>Khabarovsk</span>
+                    </div>
+                    <div class="region-list-item" data-region="sakha">
+                        <div class="region-color" style="background: #2980b9"></div>
+                        <span>República de Sakha</span>
+                    </div>
+                    <div class="region-list-item" data-region="chechnya">
+                        <div class="region-color" style="background: #1abc9c"></div>
+                        <span>Chechênia</span>
+                    </div>
+                    <div class="region-list-item" data-region="tatarstan">
+                        <div class="region-color" style="background: #9b59b6"></div>
+                        <span>Tatarstão</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="info-section">
+                <div class="info-panel">
+                    <div class="info-header">
+                        <div class="flag"></div>
+                        <h2 class="info-title" id="region-name">Selecione uma Região</h2>
+                    </div>
+                    
+                    <div class="info-content" id="region-info">
+                        <div class="info-item">
+                            <h3><i class="fas fa-info-circle"></i> Instruções</h3>
+                            <p>Clique em qualquer região do mapa ou na lista ao lado para explorar informações detalhadas sobre a região selecionada.</p>
+                        </div>
+                        
+                        <div class="info-item">
+                            <h3><i class="fas fa-flag"></i> Sobre a Rússia</h3>
+                            <p>A Rússia é o maior país do mundo, cobrindo mais de um oitavo da área habitada da Terra. Com uma história rica e diversidade cultural, a Rússia se estende pela Europa Oriental e Norte da Ásia.</p>
+                        </div>
+                        
+                        <div class="stats">
+                            <div class="stat-card">
+                                <div class="stat-value">17.1M</div>
+                                <div class="stat-label">km² de área</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-value">146M</div>
+                                <div class="stat-label">Habitantes</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-value">11</div>
+                                <div class="stat-label">Fusos horários</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-value">85</div>
+                                <div class="stat-label">Subdivisões</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <footer>
+            <p>Mapa Interativo da Rússia &copy; 2025 - Desenvolvido para fins educacionais</p>
+            <div class="footer-names">
+                Feito por:<br>
+                Gabriel Alexander<br>
+                Arthur Elísio<br>
+                Miguel Pena<br>
+                Robert Emanuel
+            </div>
+        </footer>
+    </div>
+
+    <script>
+        // Dados sobre as regiões - CORRIGIDO: Só Moscou tem "Capital"
+        const regionData = {
+            "moscow": {
+                name: "Moscou",
+                capital: "Moscou",
+                population: "12.6 milhões",
+                area: "2.511 km²",
+                description: "Moscou é a capital da Rússia e sua cidade mais populosa. É um importante centro político, econômico, cultural e científico do país.",
+                economy: "Centro financeiro e de negócios, sede de grandes corporações russas.",
+                landmarks: "Kremlin, Praça Vermelha, Catedral de São Basílio",
+                funFact: "O Metro de Moscou é um dos mais profundos e movimentados do mundo, conhecido por suas estações luxuosamente decoradas."
+            },
+            "saint-petersburg": {
+                name: "São Petersburgo",
+                capital: "São Petersburgo",
+                population: "5.4 milhões",
+                area: "1.439 km²",
+                description: "Segunda maior cidade da Rússia, fundada por Pedro, o Grande em 1703. Conhecida como 'Veneza do Norte' por seus canais e arquitetura.",
+                economy: "Turismo, construção naval, indústria de alta tecnologia.",
+                landmarks: "Museu Hermitage, Catedral de São Isaac, Palácio de Peterhof",
+                funFact: "São Petersburgo experimenta as 'Noites Brancas' no verão, quando o sol praticamente não se põe durante várias semanas."
+            },
+            "krasnodar": {
+                name: "Krai de Krasnodar",
+                capital: "Krasnodar",
+                population: "5.6 milhões",
+                area: "75.485 km²",
+                description: "Localizado no sul da Rússia, na região do Cáucaso. Inclui a popular área turística do litoral do Mar Negro.",
+                economy: "Agricultura, turismo, produção de alimentos.",
+                landmarks: "Reserva Natural de Caucaso, Resorts de Sochi",
+                funFact: "Sochi, nesta região, sediou os Jogos Olímpicos de Inverno de 2014."
+            },
+            "sverdlovsk": {
+                name: "Oblast de Sverdlovsk",
+                capital: "Ecaterimburgo",
+                population: "4.3 milhões",
+                area: "194.307 km²",
+                description: "Importante região industrial nos Urais. Ecaterimburgo é a quarta maior cidade da Rússia.",
+                economy: "Mineração, metalurgia, indústria pesada.",
+                landmarks: "Ipatiev House (local da execução da família Romanov), Rascacéus Vysotsky",
+                funFact: "Ecaterimburgo é a cidade mais oriental considerada parte da Europa, situando-se na fronteira entre Europa e Ásia."
+            },
+            "novosibirsk": {
+                name: "Oblast de Novosibirsk",
+                capital: "Novosibirsk",
+                population: "2.8 milhões",
+                area: "177.756 km²",
+                description: "Localizada na Sibéria, é um importante centro científico e educacional.",
+                economy: "Indústria, ciência, tecnologia.",
+                landmarks: "Teatro de Ópera e Balé de Novosibirsk, Museu de Arqueologia e Etnografia",
+                funFact: "Novosibirsk abriga o Akademgorodok, um famoso centro de pesquisa científica com uma das maiores concentrações de cientistas da Rússia."
+            },
+            "irkutsk": {
+                name: "Oblast de Irkutsk",
+                capital: "Irkutsk",
+                population: "2.4 milhões",
+                area: "767.900 km²",
+                description: "Situada no sul da Sibéria, conhecida pelo Lago Baikal, o mais profundo do mundo.",
+                economy: "Energia hidrelétrica, mineração, indústria madeireira.",
+                landmarks: "Lago Baikal, Museu de Arquitetura de Madeira Taltsy",
+                funFact: "O Lago Baikal contém aproximadamente 20% da água doce não congelada do mundo e é o lago mais antigo da Terra, com 25 milhões de anos."
+            },
+            "khabarovsk": {
+                name: "Krai de Khabarovsk",
+                capital: "Khabarovsk",
+                population: "1.3 milhões",
+                area: "787.633 km²",
+                description: "Localizada no Extremo Oriente russo, faz fronteira com a China.",
+                economy: "Indústria de defesa, pesca, transporte.",
+                landmarks: "Rio Amur, Reserva Natural de Bolshekhekhtsirsky",
+                funFact: "Khabarovsk é um importante centro militar e de defesa, abrigando várias instalações estratégicas russas."
+            },
+            "sakha": {
+                name: "República de Sakha (Iacútia)",
+                capital: "Yakutsk",
+                population: "1 milhão",
+                area: "3.083.523 km²",
+                description: "A maior subdivisão territorial do mundo, conhecida por suas temperaturas extremamente baixas.",
+                economy: "Mineração de diamantes, ouro e outros minerais.",
+                landmarks: "Parque Nacional dos Pilares do Lena, Museu do Mamute",
+                funFact: "Yakutsk, a capital, é a cidade mais fria do mundo, com temperaturas no inverno frequentemente caindo abaixo de -50°C."
+            },
+            "chechnya": {
+                name: "República da Chechênia",
+                capital: "Grozny",
+                population: "1.5 milhões",
+                area: "17.300 km²",
+                description: "Localizada no Cáucaso Norte, com uma história complexa e cultura distinta.",
+                economy: "Petróleo, agricultura, reconstrução pós-conflito.",
+                landmarks: "Mesquita do Coração da Chechênia, Complexo Memorial da Glória",
+                funFact: "Grozny abriga uma das maiores mesquitas da Europa, a Mesquita do Coração da Chechênia, inaugurada em 2008."
+            },
+            "tatarstan": {
+                name: "República do Tatarstão",
+                capital: "Kazan",
+                population: "3.9 milhões",
+                area: "68.000 km²",
+                description: "Região com forte identidade cultural tártara. Kazan é conhecida como a 'Terceira Capital da Rússia'.",
+                economy: "Petróleo, indústria química, construção de máquinas.",
+                landmarks: "Kremlin de Kazan, Templo de Todas as Religiões",
+                funFact: "Kazan é uma das cidades mais multiculturais da Rússia, onde cristãos ortodoxos e muçulmanos coexistem harmoniosamente há séculos."
+            }
+        };
+
+        // Elementos DOM
+        const regionListItems = document.querySelectorAll('.region-list-item');
+        const regionNameElement = document.getElementById('region-name');
+        const regionInfoElement = document.getElementById('region-info');
+        const searchInput = document.getElementById('search-input');
+
+        // Função para mostrar informações da região - CORRIGIDA: Só Moscou mostra "Capital"
+        function showRegionInfo(regionId) {
+            const data = regionData[regionId];
+            
+            if (!data) return;
+            
+            regionNameElement.textContent = data.name;
+            
+            // CORREÇÃO: Só Moscou mostra "Capital", outros mostram "Cidade Principal"
+            const capitalTitle = regionId === "moscow" ? "Capital" : "Cidade Principal";
+            
+            regionInfoElement.innerHTML = `
+                <div class="info-item">
+                    <h3><i class="fas fa-city"></i> ${capitalTitle}</h3>
+                    <p>${data.capital}</p>
+                </div>
+                <div class="info-item">
+                    <h3><i class="fas fa-users"></i> População</h3>
+                    <p>${data.population}</p>
+                </div>
+                <div class="info-item">
+                    <h3><i class="fas fa-expand-arrows-alt"></i> Área</h3>
+                    <p>${data.area}</p>
+                </div>
+                <div class="info-item">
+                    <h3><i class="fas fa-info-circle"></i> Descrição</h3>
+                    <p>${data.description}</p>
+                </div>
+                <div class="info-item">
+                    <h3><i class="fas fa-chart-line"></i> Economia</h3>
+                    <p>${data.economy}</p>
+                </div>
+                <div class="info-item">
+                    <h3><i class="fas fa-landmark"></i> Pontos Turísticos</h3>
+                    <p>${data.landmarks}</p>
+                </div>
+                <div class="info-item">
+                    <h3><i class="fas fa-lightbulb"></i> Curiosidade</h3>
+                    <p>${data.funFact}</p>
+                </div>
+            `;
+            
+            // Atualizar a região ativa na lista
+            regionListItems.forEach(item => {
+                item.classList.remove('active');
+                if (item.getAttribute('data-region') === regionId) {
+                    item.classList.add('active');
+                }
+            });
+        }
+
+        // Adicionar eventos de clique aos itens da lista
+        regionListItems.forEach(item => {
+            item.addEventListener('click', function() {
+                const regionId = this.getAttribute('data-region');
+                showRegionInfo(regionId);
+            });
+        });
+
+        // Funcionalidade de busca
+        searchInput.addEventListener('input', function() {
+            const searchTerm = this.value.toLowerCase();
+            
+            regionListItems.forEach(item => {
+                const regionName = item.textContent.toLowerCase();
+                if (regionName.includes(searchTerm)) {
+                    item.style.display = 'flex';
+                } else {
+                    item.style.display = 'none';
+                }
+            });
+        });
+
+        // Mostrar informações de uma região por padrão
+        showRegionInfo('moscow');
+    </script>
+</body>
+</html>
